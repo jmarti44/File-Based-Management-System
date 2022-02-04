@@ -15,6 +15,7 @@ class Database:
         self.filename = ""
         self.RECORD_SIZE = 0
 
+        
 
         #max field sizes
         self.maxIDSize = 0
@@ -72,6 +73,7 @@ class Database:
             q.close
         f.close
 
+    #ope
     def open(self,filename):
         filePointer = open('test.csv','r')
         self.filename = filename
