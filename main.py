@@ -6,19 +6,47 @@ database = Database()
 
 filePath = "test.csv"
 
-print('Small test file ',filePath)
-print("Intializing Database and writing records")
+print("Intializing Database and writing records for Test.data")
 database.create(filePath)
+print('Testing Opening Database')
+print("Attempting to display Record 7...")
+database.displayRecord(7)
+database.open('test')
+print("Attempting to display Record 7...")
+database.displayRecord(7)
 
-newFile = "input.data"
 
-testRecords = [0,9,5]
 
-for record in testRecords:
-    print('reading record ',record)
-    database.readRecord(record,newFile)
 
-print('\n')
+
+
+
+
+
+
+
+
+
+
+# print("Intializing Database and writing records for Test.data")
+# secondPath = "colleges.csv"
+# database.create(secondPath)
+
+
+
+
+
+
+
+
+
+# testRecords = [0,9,5]
+
+# for record in testRecords:
+#     print('reading record ',record)
+#     database.readRecord(record,newFile)
+
+# print('\n')
 
 
 
