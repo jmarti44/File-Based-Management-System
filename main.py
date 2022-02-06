@@ -13,7 +13,8 @@ print("Attempting to display Record 7...")
 database.displayRecord(7)
 database.open('test')
 print("Attempting to display Record 7...")
-database.displayRecord(7)
+database.displayRecord(100858)
+# database.readRecord(9)
 
 
 

@@ -16,9 +16,6 @@ class Database:
         self.filename = ""
         self.RECORD_SIZE = 0
 
-
-        
-
         #max field sizes
         self.maxIDSize = 0
         self.maxStateSize = 0
@@ -27,7 +24,7 @@ class Database:
 
 
 
-        self.record = {}
+        self.record = None
         self.prefix = None
         self.database = False
         self.files =set()
@@ -37,20 +34,26 @@ class Database:
 
         self.filename = filePath
         self.prefix =os.path.splitext(filePath)[0]
+        print(self.prefix)
         self.files.add(self.prefix)
         self.setMaxFields()
     
         #adjusting records and writing them to .data one line at a time
         with open(self.filename,'r') as q:
+            i = 0
             for _ in q.readlines():
                 record =  _.rstrip('\n').split(',')
+                record.insert(0,i)
                 adjustedRecord = self.adjustRecordLength(record)
-                id = adjustedRecord[0]
-                state = adjustedRecord[1]
-                city = adjustedRecord[2]
-                name = adjustedRecord[3]
+                key = str(adjustedRecord[0])
+                id = adjustedRecord[1]
+                state = adjustedRecord[2]
+                city = adjustedRecord[3]
+                name = adjustedRecord[4]
                 self.filename = '{}.data'.format(self.prefix)
-                self.writeRecord(id,state,city,name)
+                self.writeRecord(key,id,state,city,name)
+                i+=1
+                
         q.close
         self.closeDB()
 
@@ -59,19 +62,25 @@ class Database:
         stateLengths =[]
         cityLengths = []
         nameLengths = []
+        keyLengths = []
         with open(self.filename,'r') as f:
             #getting lengths of all records
+            key = 0
             for i in f.readlines():
                 record =  i.rstrip('\n').split(',')
-                currentID = record[0]
-                currentState = record[1]
-                currentCity = record[2]
-                currentName = record[3]
+                record.insert(0,key)
+                currentKey = record[0]
+                currentID = record[1]
+                currentState = record[2]
+                currentCity = record[3]
+                currentName = record[4]
                 idLengths.append(len(currentID))
                 stateLengths.append(len(currentState))
                 cityLengths.append(len(currentCity))
                 nameLengths.append(len(currentName))
+                keyLengths.append(len(str(currentKey)))
         f.close()
+        self.maxKeySize = max(keyLengths)
         self.maxIDSize = max(idLengths)
         self.maxStateSize = max(stateLengths)
         self.maxCitySize = max(cityLengths)
@@ -115,31 +124,34 @@ class Database:
     
     #helper function to adjust all record lengths
     def adjustRecordLength(self,record):
-
-
-        currentRecordIDLength =  len(record[0])
-        currentRecordStateLength = len(record[1])
-        currentRecordCityLength = len(record[2])
-        currentRecordNameLength= len(record[3])
+        currentKeyLength = len(str(record[0]))
+        currentRecordIDLength =  len(record[1])
+        currentRecordStateLength = len(record[2])
+        currentRecordCityLength = len(record[3])
+        currentRecordNameLength= len(record[4])
 
         #use format write to adjust record
+
+        if currentKeyLength < self.maxKeySize:
+            numSpaces = self.maxKeySize - currentKeyLength
+            record[0] = record[0] + "{}".format(" "*numSpaces)
         if currentRecordIDLength < self.maxIDSize:
             numSpaces = self.maxIDSize - currentRecordIDLength
-            record[0] = record[0] + "{}".format(" "*numSpaces)
+            record[1] = record[1] + "{}".format(" "*numSpaces)
 
 
         if currentRecordStateLength < self.maxStateSize:
             numSpaces = self.maxStateSize - currentRecordStateLength   
-            record[1] = record[1] + "{}".format(" "*numSpaces)
+            record[2] = record[2] + "{}".format(" "*numSpaces)
 
 
         if currentRecordCityLength  < self.maxCitySize:
             numSpaces = self.maxCitySize - currentRecordCityLength  
-            record[2] = record[2] + "{}".format(" "*numSpaces)
+            record[3] = record[3] + "{}".format(" "*numSpaces)
         
         if currentRecordNameLength < self.maxNameSize:
             numSpaces = self.maxNameSize - currentRecordNameLength
-            record[3] = record[3] + "{}".format(" "*numSpaces)
+            record[4] = record[4] + "{}".format(" "*numSpaces)
         
       
         return record
@@ -155,9 +167,10 @@ class Database:
 
             self.middle = (low+high)//2
             self.getRecord(self.middle)
-            # print(self.record)
+        
             mid_id = self.record["ID"]
-            
+            print('input ID',input_ID)
+            print('mid_id',mid_id)    
             if int(mid_id) == int(input_ID):
                 self.found = True
                 break
@@ -190,34 +203,24 @@ class Database:
         
     def readRecord(self,recordNum):
         # self.filename = indicated_file
-        self.data = open(self.filename,'r')
-        id = state = city = name = "None"
+
+        self.data = open(self.filename,'r+')
+        key = id = state = city = name = "None"
         flag = False
-        isopen = False
-        try:
-            self.data.closed
-            if self.data.closed:
-                isopen = False
-            else:
-                self.data = open(self.filename, 'r')
-                isopen = True
-        except AttributeError:
-            isopen = False
-        if isopen and recordNum >=0 and recordNum < self.RECORD_SIZE:
+        if recordNum >=0 and recordNum < self.RECORD_SIZE:
             self.data.seek(0,0)
             self.data.seek(recordNum*self.RECORD_SIZE)
             line = self.data.readline().rstrip('\n')
             flag = True
         if flag:
             record = line.split(',')
-            id, state, city, name = record
-            # print('id',id)
-        self.record = dict({"ID":id,"State":state.strip(),"City":city.strip(),"Name":name.strip()})
+            key,id, state, city, name = record
 
-        return flag
+        self.record = dict({'Key':key,"ID":id,"State":state.strip(),"City":city.strip(),"Name":name.strip()})
 
-    def writeRecord(self,id,state,city,name):
-        newRecord = id  + "," + state + "," + city   + ","  + name +  "\n"
+
+    def writeRecord(self,key,id,state,city,name):
+        newRecord = key + "," +id  + "," + state + "," + city   + ","  + name +  "\n"
         try:
             with open('{}.data'.format(self.prefix), 'a') as f:
                 f.write(newRecord)
@@ -249,18 +252,17 @@ class Database:
             print('Given database is not open')
         #Binary Search by record id
     def binarySearch (self, input_ID):
-        
         low = 0
-        high = self.RECORD_SIZE - 1
+        high = self.numSortedRecords
         self.found = False
 
         while high >= low:
 
             self.middle = (low+high)//2
             self.readRecord(self.middle)
-            # print(self.record)
+            
             mid_id = self.record["ID"]
-            print(mid_id)
+
             
             if int(mid_id) == int(input_ID):
                 self.found = True
@@ -270,7 +272,6 @@ class Database:
             elif int(mid_id) < int(input_ID):
                 low = self.middle + 1
         print(self.record)
-    
 
     def displayRecord(self,id):
         flag = self.isOpen()
