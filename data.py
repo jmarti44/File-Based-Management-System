@@ -1,10 +1,13 @@
 from asyncore import write
 from collections import defaultdict
+from decimal import Overflow
 import os.path 
 
 
 import csv
 from re import M
+
+
 
 class Database:
 
@@ -28,13 +31,15 @@ class Database:
         self.prefix = None
         self.database = False
         self.files =set()
+        self.filePointer = ""
+        self.foundRecordNum = ""
     
     #creating intial database with filepath constructor
     def create(self,filePath):
 
-        self.filename = filePath
+        self.filename = filePath + '.csv'
         self.prefix =os.path.splitext(filePath)[0]
-        print(self.prefix)
+
         self.files.add(self.prefix)
         self.setMaxFields()
     
@@ -43,15 +48,17 @@ class Database:
             i = 0
             for _ in q.readlines():
                 record =  _.rstrip('\n').split(',')
-                record.insert(0,i)
+                #[id,state,city,name]
+                #record.insert(0,i)
+                adjustedRecord = '{}'.format(record)
                 adjustedRecord = self.adjustRecordLength(record)
-                key = str(adjustedRecord[0])
-                id = adjustedRecord[1]
-                state = adjustedRecord[2]
-                city = adjustedRecord[3]
-                name = adjustedRecord[4]
+                id = adjustedRecord[0]
+                state = adjustedRecord[1]
+                city = adjustedRecord[2]
+                name = adjustedRecord[3]
+    
                 self.filename = '{}.data'.format(self.prefix)
-                self.writeRecord(key,id,state,city,name)
+                self.writeRecord(id,state,city, name)
                 i+=1
                 
         q.close
@@ -87,9 +94,12 @@ class Database:
         self.maxNameSize = max(nameLengths)
 
     def open(self,file):
-        if file in self.files:
+        print('open being called')
+        if self.isOpen() == True:
+            print ('Another database is curretnly opened')
+        elif file in self.files:
+            print('database opened')
             self.prefix = file
-            print('calling open')
             self.reinitalizeDB(file)
             self.filename = '{}.data'.format(self.prefix)
     def reinitalizeDB(self,file):
@@ -106,78 +116,42 @@ class Database:
         self.numSortedRecords = int(rec[0][-1])
         self.numOverflowRecords = int(rec[1][-1])
         self.RECORD_SIZE = int(rec[2][-1])
-
-
- 
-
-
-
-
-
-
-        # filePointer = open('test.csv','r')
-        # self.filename = filename
-        # if not os.path.isfile(self.filename):
-        #     print(str(self.filename)+" not found")
-
-        
+        q.close()
     
     #helper function to adjust all record lengths
     def adjustRecordLength(self,record):
-        currentKeyLength = len(str(record[0]))
-        currentRecordIDLength =  len(record[1])
-        currentRecordStateLength = len(record[2])
-        currentRecordCityLength = len(record[3])
-        currentRecordNameLength= len(record[4])
+        currentRecordIDLength =  len(record[0])
+        currentRecordStateLength = len(record[1])
+        currentRecordCityLength = len(record[2])
+        currentRecordNameLength= len(record[3])
+
+
+
+
+
 
         #use format write to adjust record
 
-        if currentKeyLength < self.maxKeySize:
-            numSpaces = self.maxKeySize - currentKeyLength
-            record[0] = record[0] + "{}".format(" "*numSpaces)
         if currentRecordIDLength < self.maxIDSize:
             numSpaces = self.maxIDSize - currentRecordIDLength
-            record[1] = record[1] + "{}".format(" "*numSpaces)
-
+            record[0] = record[0] + "{}".format(" "*numSpaces)
 
         if currentRecordStateLength < self.maxStateSize:
             numSpaces = self.maxStateSize - currentRecordStateLength   
-            record[2] = record[2] + "{}".format(" "*numSpaces)
+            record[1] = record[1] + "{}".format(" "*numSpaces)
 
 
         if currentRecordCityLength  < self.maxCitySize:
             numSpaces = self.maxCitySize - currentRecordCityLength  
-            record[3] = record[3] + "{}".format(" "*numSpaces)
+            record[2] = record[2] + "{}".format(" "*numSpaces)
         
         if currentRecordNameLength < self.maxNameSize:
             numSpaces = self.maxNameSize - currentRecordNameLength
-            record[4] = record[4] + "{}".format(" "*numSpaces)
+            record[3] = record[3] + "{}".format(" "*numSpaces)
         
       
         return record
 
-    #Binary Search by record id
-    def binarySearch (self, input_ID):
-        
-        low = 0
-        high = self.record_size - 1
-        self.found = False
-
-        while high >= low:
-
-            self.middle = (low+high)//2
-            self.getRecord(self.middle)
-        
-            mid_id = self.record["ID"]
-            print('input ID',input_ID)
-            print('mid_id',mid_id)    
-            if int(mid_id) == int(input_ID):
-                self.found = True
-                break
-            elif int(mid_id) > int(input_ID):
-                high = self.middle - 1
-            elif int(mid_id) < int(input_ID):
-                low = self.middle + 1
         
     def closeDB(self):
         self.database = False
@@ -198,29 +172,29 @@ class Database:
             for i in q.readlines():
                 self.RECORD_SIZE = len(i)
         q.close
-
         return self.RECORD_SIZE
         
-    def readRecord(self,recordNum):
-        # self.filename = indicated_file
+    def readRecord(self,recordNum,filePointer):
+        self.filename = self.prefix + "."+ filePointer
+
 
         self.data = open(self.filename,'r+')
-        key = id = state = city = name = "None"
+        id = state = city = name = "None"
         flag = False
-        if recordNum >=0 and recordNum < self.RECORD_SIZE:
+        if recordNum >=0 and recordNum < self.numSortedRecords:
             self.data.seek(0,0)
             self.data.seek(recordNum*self.RECORD_SIZE)
             line = self.data.readline().rstrip('\n')
             flag = True
         if flag:
             record = line.split(',')
-            key,id, state, city, name = record
+            id, state, city, name = record
+        self.record = dict({"ID":id,"State":state.strip(),"City":city.strip(),"Name":name.strip()})
+        self.foundRecordNum = recordNum
 
-        self.record = dict({'Key':key,"ID":id,"State":state.strip(),"City":city.strip(),"Name":name.strip()})
 
-
-    def writeRecord(self,key,id,state,city,name):
-        newRecord = key + "," +id  + "," + state + "," + city   + ","  + name +  "\n"
+    def writeRecord(self,id,state,city,name):
+        newRecord = id  + "," + state + "," + city   + ","  + name +  "\n"
         try:
             with open('{}.data'.format(self.prefix), 'a') as f:
                 f.write(newRecord)
@@ -228,6 +202,7 @@ class Database:
             print("The 'docs' directory does not exist")
         self.numSortedRecords+=1
         self.RECORD_SIZE = self.getRecordSize()
+        self.updateConfig
 
         with open ("{}.config".format(self.prefix), 'w') as config:
             config.write("Number of Sorted Records: {0}".format(self.numSortedRecords))
@@ -236,34 +211,178 @@ class Database:
             config.write('\n')
             config.write('Record Size: {}'.format(self.RECORD_SIZE))
         with open ("{}.overflow".format(self.prefix), 'w') as overflow:
-            overflow.write("testing purposes")
+            overflow.write("")
+            
+
+    def updateRecord(self,id,state,city,name):
+        flag = self.isOpen()
+        if flag == True:
+            find = self.findRecord(id)
+            if find == True:
+                self.overwriteRecord(id,state,city,name,self.filePointer)
+            else:
+                print("Record not found")
+        else:
+            print('Given database is not open')
+    def deleteRecord(self,id):
+        flag = self.isOpen()
+        if flag == True:
+            find = self.findRecord(id)
+            if find == True:
+                self.overwriteRecord(id," ", " "," ",self.filePointer)
+            else:
+                print('Record not found')
+            
+        else:
+            print('Given database is not open')
+    def overwriteRecord(self,id,state,city,name,filePointer):
         
-    def overwriteRecord(self,file_ptr,recordNum,id,state,city,name):
+        newRecord = id + ',' + state + ','+ city + ',' + name
+        newRecord = newRecord.split(',')
+        adjustedRecord = self.adjustRecordLength(newRecord)
+        currentID = adjustedRecord[0]
+        currentState = adjustedRecord[1]
+        currentCity = adjustedRecord[2]
+        currentName = adjustedRecord[3]
+        newRecord = currentID  + "," + currentState + "," + currentCity   + ","  + currentName +  "\n"
+        self.filename = self.prefix + "." + filePointer
+        if filePointer == "data":
+            self.foundRecordNum +=1
+            self.data = open('{}.data'.format(self.prefix),'r+')
+            self.data.seek(0,0)
+            self.data.seek(int(self.foundRecordNum-1)*self.RECORD_SIZE)
+            self.data.write(newRecord)
+        elif filePointer == "overflow":
+        
+            self.foundRecordNum +=1
+            self.data = open('{}.overflow'.format(self.prefix),'r+')
+            self.data.seek(0,0)
+            self.data.seek(int(self.foundRecordNum-1)*self.RECORD_SIZE)
+            self.data.write(newRecord)
+        self.data.close()
+    
+    def lengthOfOverflow(self):
+        filePath = '{}.overflow'.format(self.prefix)
+        overFlowFile = open(filePath,'r+')
+        size = 0
+        for i in overFlowFile.readlines():
+            size = len(i)
+        return size
+
+
+
+
+
+        
+
+  
+    def addRecord(self,id,state,city,name):
         flag = self.isOpen()
         if flag == True:
-            pass
+            if self.lengthOfOverflow == 0:
+                currentRecord = id + ',' + state + ','+ city + ',' + name
+                currentRecord = currentRecord.split(',')
+                adjustedRecord = self.adjustRecordLength(currentRecord)
+
+                currentID = adjustedRecord[0]
+                currentState = adjustedRecord[1]
+                currentCity = adjustedRecord[2]
+                currentName = adjustedRecord[3]
+
+                self.appendRecord(currentID,currentState,currentCity,currentName)
+            else:
+                find = self.findRecord(id)
+                if find == True:
+                    print('Record already in database')
+                else:
+                    currentRecord = id + ',' + state + ','+ city + ',' + name
+                    currentRecord = currentRecord.split(',')
+                    adjustedRecord = self.adjustRecordLength(currentRecord)
+
+                    currentID = adjustedRecord[0]
+                    currentState = adjustedRecord[1]
+                    currentCity = adjustedRecord[2]
+                    currentName = adjustedRecord[3]
+
+                    self.appendRecord(currentID,currentState,currentCity,currentName)
         else:
             print('Given database is not open')
+    #Binary Search by record id
     def appendRecord(self,id,state,city,name):
-        flag = self.isOpen()
-        if flag == True:
-            pass
-        else:
-            print('Given database is not open')
-        #Binary Search by record id
-    def binarySearch (self, input_ID):
+        newRecord = id  + "," + state + "," + city   + ","  + name +  "\n"
+
+        overflowFile = open('{}.overflow'.format(self.prefix),'a')
+        overflowFile.write(newRecord)
+        overflowFile.close()
+        #updating config file
+        configFile = '{}.config'.format(self.prefix)
+        self.updateConfig(configFile)
+
+    def updateConfig(self,configFile):
+
+        rec =  []
+        with open(configFile,'r') as c:
+            for row in c.readlines():
+                record =  row.rstrip('\n').split(' ')
+                rec.append(record)
+        self.numSortedRecords = int(rec[0][-1])
+        currentOverflow= int(rec[1][-1])
+        self.RECORD_SIZE = int(rec[2][-1])
+        self.numOverflowRecords = currentOverflow + 1
+        with open (configFile,'w') as d:
+            d.write("Number of Sorted Records: {0}".format(self.numSortedRecords))
+            d.write('\n')
+            d.write('Number of Overflow Records: {}'.format(self.numOverflowRecords))
+            d.write('\n')
+            d.write('Record Size: {}'.format(self.RECORD_SIZE))
+   
+
+
+            # overflowRecords = int(rec[1][-1])
+    def findRecord(self,id):
+        
+        binary = self.binarySearch(id,'data')
+        linear = self.linearSearch(id)
+
+
+        if binary == True:
+            self.filePointer = "data"
+        elif linear == True:
+            self.filePointer = "overflow"
+        
+        return binary or linear
+
+
+    def linearSearch(self,id):
+        currentRecord = 0
+        overflowCount = 1
+        flag = True
+        if self.record['ID'] == "None":
+            self.record['ID'] = '0'
+        while int(id)!= int(self.record['ID']):
+            if overflowCount > self.numOverflowRecords:
+                flag = False
+                break
+            self.readRecord(currentRecord,"overflow")
+            currentRecord+=1
+            overflowCount+=1
+        return flag
+     
+    def binarySearch (self, input_ID,filePointer):
+        
         low = 0
         high = self.numSortedRecords
         self.found = False
-
         while high >= low:
 
             self.middle = (low+high)//2
-            self.readRecord(self.middle)
+            self.middle 
+            self.readRecord(self.middle,filePointer)
             
-            mid_id = self.record["ID"]
 
-            
+            mid_id = self.record["ID"]
+            if mid_id ==  "None":
+                break
             if int(mid_id) == int(input_ID):
                 self.found = True
                 break
@@ -271,19 +390,15 @@ class Database:
                 high = self.middle - 1
             elif int(mid_id) < int(input_ID):
                 low = self.middle + 1
-        print(self.record)
+        return self.found
 
     def displayRecord(self,id):
         flag = self.isOpen()
         if flag == True:
-            self.binarySearch(id)
+            find = self.findRecord(id)
+            if find == True:
+                print(self.record)
+            else:
+                print('Not a valid record')
         else:
             print('Database is not open')
-
-
-
-
-
-
-
-
