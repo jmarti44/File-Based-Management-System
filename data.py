@@ -26,7 +26,7 @@ class Database:
         self.maxNameSize = 0
 
 
-
+        #key instance variables for record and file information
         self.record = None
         self.prefix = None
         self.database = False
@@ -36,10 +36,11 @@ class Database:
     
     #creating intial database with filepath constructor
     def create(self,filePath):
-
+        #prefix takes name of the file without any extensions
         self.filename = filePath + '.csv'
         self.prefix =os.path.splitext(filePath)[0]
 
+        #self.files set tp keep track of files
         self.files.add(self.prefix)
         self.setMaxFields()
     
@@ -64,6 +65,7 @@ class Database:
         q.close
         self.closeDB()
 
+    #setting maxFields
     def setMaxFields(self):
         idLengths = []
         stateLengths =[]
@@ -93,6 +95,7 @@ class Database:
         self.maxCitySize = max(cityLengths)
         self.maxNameSize = max(nameLengths)
 
+    #checking isOpen attribute
     def open(self,file):
         if self.isOpen() == True:
             print ('Another database is curretnly opened')
@@ -100,6 +103,8 @@ class Database:
             self.prefix = file
             self.reinitalizeDB(file)
             self.filename = '{}.data'.format(self.prefix)
+
+    #helper function for setting instance varaibles from config file
     def reinitalizeDB(self,file):
         self.database = True
         configFile = "{}.config".format(self.prefix)
@@ -116,7 +121,7 @@ class Database:
         self.RECORD_SIZE = int(rec[2][-1])
         q.close()
     
-    #helper function to adjust all record lengths
+    #helper function to adjust all record lengths according to maxFields
     def adjustRecordLength(self,record):
         currentRecordIDLength =  len(record[0])
         currentRecordStateLength = len(record[1])
@@ -124,12 +129,7 @@ class Database:
         currentRecordNameLength= len(record[3])
 
 
-
-
-
-
         #use format write to adjust record
-
         if currentRecordIDLength < self.maxIDSize:
             numSpaces = self.maxIDSize - currentRecordIDLength
             record[0] = record[0] + "{}".format(" "*numSpaces)
@@ -147,10 +147,10 @@ class Database:
             numSpaces = self.maxNameSize - currentRecordNameLength
             record[3] = record[3] + "{}".format(" "*numSpaces)
         
-      
+        #returns adjuted record
         return record
 
-        
+    #resets instance vaibales and sets database  to false    
     def closeDB(self):
         self.database = False
         print(self.prefix,' database closed')
@@ -160,12 +160,11 @@ class Database:
         self.numOverflowRecords = 0
         self.RECORD_SIZE = 0
 
-
-    
+    #return self.database attribute
     def isOpen(self):
         return self.database
 
-    
+    #helper function for getting record size
     def getRecordSize(self):
 
         with open(self.filename,'r') as q:
@@ -173,12 +172,10 @@ class Database:
                 self.RECORD_SIZE = len(i)
         q.close
         return self.RECORD_SIZE
-        
+
+    #filepointer(extension) and filename(name) parameters used to account for .data and.overflow
     def readRecord(self,recordNum,filePointer):
         self.filename = self.prefix + "."+ filePointer
-
-
-
         self.data = open(self.filename,'r+')
         id = state = city = name = "None"
         flag = False
@@ -193,7 +190,7 @@ class Database:
         self.record = dict({"ID":id,"State":state.strip(),"City":city.strip(),"Name":name.strip()})
         self.foundRecordNum = recordNum
 
-
+    #for writing into intil .data
     def writeRecord(self,id,state,city,name):
         newRecord = id  + "," + state + "," + city   + ","  + name +  "\n"
         try:
@@ -205,6 +202,7 @@ class Database:
         self.RECORD_SIZE = self.getRecordSize()
         self.updateConfig
 
+        #creating config and overflow files
         with open ("{}.config".format(self.prefix), 'w') as config:
             config.write("Number of Sorted Records: {0}".format(self.numSortedRecords))
             config.write('\n')
@@ -214,7 +212,7 @@ class Database:
         with open ("{}.overflow".format(self.prefix), 'w') as overflow:
             overflow.write("")
             
-
+    #flag used to check if database is open
     def updateRecord(self,id,state,city,name):
         flag = self.isOpen()
         if flag == True:
@@ -225,6 +223,8 @@ class Database:
                 print("Record not found")
         else:
             print('Given database is not open')
+
+
     def deleteRecord(self,id):
         flag = self.isOpen()
         if flag == True:
@@ -236,6 +236,8 @@ class Database:
             
         else:
             print('Given database is not open')
+    
+
     def overwriteRecord(self,id,state,city,name,filePointer):
         
         newRecord = id + ',' + state + ','+ city + ',' + name
@@ -262,6 +264,7 @@ class Database:
             self.data.write(newRecord)
         self.data.close()
     
+    #helper function for length of overflow file
     def lengthOfOverflow(self):
         filePath = '{}.overflow'.format(self.prefix)
         overFlowFile = open(filePath,'r+')
@@ -271,12 +274,6 @@ class Database:
         return size
 
 
-
-
-
-        
-
-  
     def addRecord(self,id,state,city,name):
         flag = self.isOpen()
         if flag == True:
@@ -308,7 +305,8 @@ class Database:
                     self.appendRecord(currentID,currentState,currentCity,currentName)
         else:
             print('Given database is not open')
-    #Binary Search by record id
+
+    
     def appendRecord(self,id,state,city,name):
         newRecord = id  + "," + state + "," + city   + ","  + name +  "\n"
 
@@ -319,8 +317,9 @@ class Database:
         configFile = '{}.config'.format(self.prefix)
         self.updateConfig(configFile)
 
+    #helper function for updating config file when appending to overflow file
     def updateConfig(self,configFile):
-
+        # overflowRecords = int(rec[1][-1])
         rec =  []
         with open(configFile,'r') as c:
             for row in c.readlines():
@@ -338,8 +337,7 @@ class Database:
             d.write('Record Size: {}'.format(self.RECORD_SIZE))
    
 
-
-            # overflowRecords = int(rec[1][-1])
+    #performs a binary search and linear search and sets self.filePointer(extension)
     def findRecord(self,id):
         
         binary = self.binarySearch(id,'data')
@@ -350,10 +348,9 @@ class Database:
             self.filePointer = "data"
         elif linear == True:
             self.filePointer = "overflow"
-        
         return binary or linear
 
-
+    #linear search helper function starting at record 0
     def linearSearch(self,id):
         currentRecord = 0
         overflowCount = 1
@@ -368,7 +365,8 @@ class Database:
             currentRecord+=1
             overflowCount+=1
         return flag
-     
+
+    #binary search helper function
     def binarySearch (self, input_ID,filePointer):
         
         low = 0
@@ -380,8 +378,9 @@ class Database:
             self.middle 
             self.readRecord(self.middle,filePointer)
             
-
+        
             mid_id = self.record["ID"]
+            #edge case: mid_id falls at the end 
             if mid_id ==  "None":
                 break
             if int(mid_id) == int(input_ID):
@@ -410,6 +409,7 @@ class Database:
                 print('Not a valid record')
         else:
             print('Database is not open')
+
     def createReport(self):
         flag = self.isOpen()
         if flag == True:
