@@ -94,11 +94,9 @@ class Database:
         self.maxNameSize = max(nameLengths)
 
     def open(self,file):
-        print('open being called')
         if self.isOpen() == True:
             print ('Another database is curretnly opened')
         elif file in self.files:
-            print('database opened')
             self.prefix = file
             self.reinitalizeDB(file)
             self.filename = '{}.data'.format(self.prefix)
@@ -155,6 +153,7 @@ class Database:
         
     def closeDB(self):
         self.database = False
+        print(self.prefix,' database closed')
         self.prefix = None
         #instance variables
         self.numSortedRecords = 0                         
@@ -168,6 +167,7 @@ class Database:
 
     
     def getRecordSize(self):
+
         with open(self.filename,'r') as q:
             for i in q.readlines():
                 self.RECORD_SIZE = len(i)
@@ -176,6 +176,7 @@ class Database:
         
     def readRecord(self,recordNum,filePointer):
         self.filename = self.prefix + "."+ filePointer
+
 
 
         self.data = open(self.filename,'r+')
@@ -397,8 +398,33 @@ class Database:
         if flag == True:
             find = self.findRecord(id)
             if find == True:
-                print(self.record)
+                recordID = self.record['ID']
+                state = self.record['State']
+                city = self.record['City']
+                name = self.record['Name']
+                record = recordID + " " + state + " " + city + " " + name
+                print(record)
+
+
             else:
                 print('Not a valid record')
         else:
             print('Database is not open')
+    def createReport(self):
+        flag = self.isOpen()
+        if flag == True:
+            row = 0
+
+            while row < 10:
+                self.readRecord(row,'data')
+                recordID = self.record['ID']
+                state = self.record['State']
+                city = self.record['City']
+                name = self.record['Name']
+                newRecord = recordID  + "," + state + "," + city   + ","  + name +  "\n"
+                with open('{}.txt'.format(self.prefix + " " + "report"), 'a') as f:
+                    f.write(newRecord)
+                row+=1
+        else:
+            print('Database is not open')
+            

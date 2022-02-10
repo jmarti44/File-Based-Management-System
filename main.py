@@ -1,56 +1,114 @@
 #inital class instantiation
 from data import Database
-
-print("Testing Writing and Reading individual records\n")
 database = Database()
 
-filePath = "test.csv"
+def dbFunction(option):
+    if option == '1':
+        newPrefix = input('Enter the name of the desired csv file\n')
+        database.create(newPrefix)
+        print('Database closed by default after creation')
+        menu = input('Press Enter to return to the main menu')
+        displayMenu()
+    elif option == '2':
+        newPrefix = input('Enter the prefix name of the desired data file\n')
+        database.open(newPrefix)
+        menu = input('Press Enter to return to the main menu')
+        displayMenu()
+    elif option == '3':
+        database.closeDB()
+        menu = input('Press Enter to return to the main menu')
+        displayMenu()
+    elif option == '4':
+        record = input('Enter desired record\n')
+        database.displayRecord(record)
+        menu = input('Press Enter to return to the main menu')
+        displayMenu()
+    elif option == '5':
+        record =  input('Enter the desired ID you want to update\n')
+        state = input('Enter state field\n')
+        city  = input('Enter city field\n')
+        name = input('Enter university name field\n')
+        database.updateRecord(record,state,city,name)
+        menu = input('Press Enter to return to the main menu')
+        displayMenu()
+    elif option  == '6':
+        database.createReport()
+        print('Report created')
+        menu = input('Press Enter to return to main menu')
+                
 
 
-print("Intializing Database and writing records for Test.data")
-database.create('test')
-database.create('colleges')
-database.open('test')
-database.open('colleges')
+    elif option == '7':
+        record = input('Enter the desired ID you want to add\n')
+        state = input('Enter state field\n')
+        city  = input('Enter city field\n')
+        name = input('Enter university name field\n')
+        database.addRecord(record,state,city,name)
+        menu = input('Press Enter to return to the main menu')
+        displayMenu()
+    elif option == '8':
+        record = input('Enter Record')
+        database.updateRecord(record," "," "," ")
+        menu = input('Press Enter to return to the main menu')
+        displayMenu()
+    elif option == '9':
+        exit()
+def displayMenu():
+        
+    option = ""
+    while option!= '9':
 
-# print("Attempting to display Record 7...")
-# database.displayRecord(7)
-# print('Testing Opening Database')
-# database.open('test')
-# print("Attempting to display 100858...")
-# database.displayRecord('100858')
-# # # print('sorted records:' ,database.numSortedRecords)
-# # # print('closing database')
-# # # database.closeDB()
-# # # database.displayRecord(100858)
-# # # print('sorted records:' ,database.numSortedRecords)
-# # # # database.readRecord(9)
-# # # #215114,Pennsylvania,Langhorne,Cairn_University
-# # # database.open('test')
-# print('Testing addRecord')
-database.addRecord('215114','Ark','Langhorne','Langhorne_Cairn_University')
-database.closeDB()
-database.open('colleges')
-database.addRecord('200000','testing','testing','!')
-# database.addRecord('111111','Jo','Jo','Jo')
-# database.addRecord('111111','Jo','Hello','DDd')
-# database.create('colleges')
+        print('File-based Database System')
+
+        print('1. ','Create new database')
+
+        print('2. ','Open database')
+
+        print('3. ','Close database')
+
+        print('4. ','Display Record')
+
+        print ('5. ','Update Record')
+        
+        print('6. ','Create Report')
+
+        print('7. ','Add Record')
+
+        print ('8. ','Delete Record')
+
+        print('9. ','Exit Program')
+
+        option = input('Select from the following options\n')
+        dbFunction(option)
+    
+
+displayMenu()
 
 
 
-# database.updateRecord('100858','Jose','Jose','Jose')
-# database.deleteRecord('22')
-# database.updateRecord('215114','Tom','Tom','Tom')
-# database.updateRecord('111111','Mom',"Mom",'!!')
-# database.addRecord('215114','Ya','Hello','Mommy')
-# database.updateRecord('111111','Tom','Tom','Name')
+    
 
 
 
 
-#214704,Pennsylvania,Reading,Penn_State_University_Berks
-# database.addRecord(214704,'Pennsylvania','Reading','Penn_State_University_Berks')
-# database.updateRecord('215114','Texas','!','Jose')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
